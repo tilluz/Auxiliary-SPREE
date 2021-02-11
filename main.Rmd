@@ -1,0 +1,95 @@
+---
+title: "Inter-censal updating using structure-preserving methods and satellite imagery"
+output: html_notebook
+---
+
+This is the main script for running the analysis described in the paper "Inter-censal updating using structure-preserving methods and satellite imagery" of Till Koebe, Alejandra Arias-Salazar, Natalia Perilla-Rojas and Timo Schmid.
+
+All of the data to replicate the findings of this study are available for scientific use.
+
+- [Census 2002](http://anads.ansd.sn/index.php/catalog/9)
+- [Census 2013](http://anads.ansd.sn/index.php/catalog/51)
+- [WorldPop covariates](https://www.worldpop.org/project/categories?id=14)
+- [Weather data](https://www.worldclim.org/data/worldclim21.html)
+- [DHS surveys](https://dhsprogram.com/methodology/survey-search.cfm?pgtype=main&SrvyTp=country&ctry_id=36)
+- [Population projections](http://www.ansd.sn/ressources/publications/indicateurs/Projections-demographiques-2013-2025+.htm)
+
+This file is designed to provide an overview over the overall code structure only. Do not execute this notebook! It may lead to memory overflows or it may take days to finish.
+
+```{r}
+library(haven)
+library(tidyverse)
+library(survey)
+library(rgdal)
+library(rgeos)
+library(sp)
+library(foreign)
+library(broom)
+library(mice)
+library(raster)
+library(data.table)
+library(randomForest)
+library(foreach)
+library(doParallel)
+```
+
+Align the maps of 2002 and 2013
+
+```{r}
+source(map_alignment.R)
+```
+
+Pre-process DHS data
+
+```{r}
+source(dhs_2013.R)
+source(dhs_2014.R)
+source(dhs_2015.R)
+source(dhs_2016.R)
+source(dhs_2017.R)
+source(dhs_2018.R)
+source(dhs_2019.R)
+source(cluster_allocation.R)
+```
+
+Pre-process census data
+
+```{r}
+source(census_2002_alternative.R)
+source(census_2013_alternative.R)
+```
+
+Pre-process WorldPop covariates
+
+```{r}
+source(wp_covariates.R)
+source(weather.R)
+```
+
+Create HB-based population estimates
+
+```{r}
+source(hb_estimation.R)
+```
+
+Create RF-based population estimates
+
+```{r}
+source(wp_pixel_rf_02_13.R)
+source(wp_pixel_rf_application.R)
+```
+
+Run simulation and application
+
+```{r}
+source(application_semiparametric_parallel.R)
+source(simulation_semiparametric_parallel.R)
+```
+
+Visualize the results
+
+```{r}
+source(visualization_application_fixed.R)
+source(visualization_simulation_fixed.R)
+```
+
