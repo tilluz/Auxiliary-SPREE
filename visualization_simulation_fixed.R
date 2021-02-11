@@ -14,11 +14,6 @@ library(xtable)
 setwd("your_directory_path")
 
 # Map
-map_x <- readOGR(dsn = './data/midsave/', layer="map_x", verbose = F)
-map_x$geoid <- as.character(map_x$x_id)
-map_x$COD_ENTITE <- as.character(map_x$COD_ENTITE)
-map_x$CODE <- as.character(map_x$CODE)
-
 map_com <- readOGR(dsn = './data/midsave/', layer="map_com_harmonised", verbose = F)
 map_com$COD_ENTITE <- as.character(map_com$COD_ENTITE)
 map_com$CODE <- as.character(map_com$CODE)
@@ -32,27 +27,13 @@ pop02 <- readRDS('./data/midsave/census_2002_imputed_simulation_alt.rds') %>%
   mutate(wt = wt*hhmembers_n,
          CODE = as.character(geoid),
          deptid = substr(CODE, start = 1, stop = 3),
-         regid = substr(CODE, start = 1, stop = 2),
-         children = factor(ifelse(children_n == 0, 0, 1), levels = c(0,1), labels = c('no', 'yes')),
-         hh_size = factor(ifelse(hhmembers_n == 1, 0,
-                                 ifelse((hhmembers_n == 2) & (children_n == 0), 1,
-                                        ifelse((hhmembers_n == 2) & (children_n != 0), 2,
-                                               ifelse((hhmembers_n >2) & (hhmembers_n < 6), 2, 3)))),
-                          levels = c(0,1,2,3),
-                          labels = c('single', 'couple', 'small', 'large'))) %>% 
+         regid = substr(CODE, start = 1, stop = 2)) %>% 
   filter(m == 1)
 
 pop13 <- readRDS('./data/midsave/census_2013_imputed_application_alt.rds') %>% 
   mutate(wt = wt*hhmembers_n,
          deptid = substr(CODE, start = 1, stop = 3),
-         regid = substr(CODE, start = 1, stop = 2),
-         children = factor(ifelse(children_n == 0, 0, 1), levels = c(0,1), labels = c('no', 'yes')),
-         hh_size = factor(ifelse(hhmembers_n == 1, 0,
-                                 ifelse((hhmembers_n == 2) & (children_n == 0), 1,
-                                        ifelse((hhmembers_n == 2) & (children_n != 0), 2,
-                                               ifelse((hhmembers_n >2) & (hhmembers_n < 6), 2, 3)))),
-                          levels = c(0,1,2,3),
-                          labels = c('single', 'couple', 'small', 'large'))) %>% 
+         regid = substr(CODE, start = 1, stop = 2)) %>% 
   filter(m == 1)
 
 # DHS 2013
@@ -61,14 +42,7 @@ dhs_2013 <- readRDS('./data/midsave/dhs_2013.rds') %>%
               select(DHSCLUST, CODE = geoid), by = c('v021' = 'DHSCLUST')) %>% 
   mutate(wt = wt*hhmembers_n,
          deptid = substr(CODE, start = 1, stop = 3),
-         regid = substr(CODE, start = 1, stop = 2),
-         children = factor(ifelse(children_n == 0, 0, 1), levels = c(0,1), labels = c('no', 'yes')),
-         hh_size = factor(ifelse(hhmembers_n == 1, 0,
-                                 ifelse((hhmembers_n == 2) & (children_n == 0), 1,
-                                        ifelse((hhmembers_n == 2) & (children_n != 0), 2,
-                                               ifelse((hhmembers_n >2) & (hhmembers_n < 6), 2, 3)))),
-                          levels = c(0,1,2,3),
-                          labels = c('single', 'couple', 'small', 'large')))
+         regid = substr(CODE, start = 1, stop = 2))
 
 # WorldPop Population
 ppp_x <- readRDS('./data/midsave/ppp_x.rds')
@@ -380,9 +354,6 @@ within_dept <- pop_share_dept %>%
 
 test <- within_arr %>% 
   select(reg_name, fixed_arr = mape_fixed, dynamic_arr = mape_dynamic, mixed_arr = mape_mix) %>% 
-  # left_join(within_dept %>% 
-  #             select(reg_name, rate_dept = mape_pop13, fixed_dept = mape_fixed, dynamic_dept = mape_dynamic, mixed_dept = mape_mix), 
-  #           by = 'reg_name') %>% 
   left_join(within_hb %>% 
               select(reg_name, dynamic_hb = mape_hb, mixed_hb = mape_mix), 
             by = 'reg_name') %>% 
@@ -413,15 +384,7 @@ diff_pop_raw <- pop02 %>%
          pop13_p = pop13/sum(pop13),
          ppp13_p = ppp13/sum(ppp13)) %>%
   ungroup() %>% 
-  # rowwise() %>% 
   mutate(mix13_p = (pop02_p + ppp13_p)/2)
-
-# diff_pop <- diff_pop_raw %>% 
-#   mutate(diff = abs((pop02_p - pop13_p)/pop02_p)*100,
-#          diff_dynamic = abs((pop13_p - ppp13_p)/pop13_p)*100,
-#          diff_static = abs((pop13_p - pop02_p)/pop13_p)*100,
-#          diff_mix = abs((pop13_p - mix13_p)/pop13_p)*100) %>% 
-#   arrange(diff)
 
 diff_pop <- diff_pop_raw %>%
   mutate(diff = (pop13_p - pop02_p),
@@ -429,13 +392,6 @@ diff_pop <- diff_pop_raw %>%
          diff_static = (pop02_p - pop13_p)/pop13_p,
          diff_mix = (mix13_p - pop13_p)/pop13_p) %>%
   arrange(diff)
-
-# diff_pop <- diff_pop_raw %>% 
-#   mutate(diff = (pop13_p - pop02_p),
-#          diff_dynamic = (ppp13_p - pop13_p),
-#          diff_static = (pop02_p - pop13_p),
-#          diff_mix = (mix13_p - pop13_p)) %>% 
-#   arrange(diff)
 
 diff_plot <- diff_pop %>%
   select(CODE, contains('diff')) %>% 
@@ -456,48 +412,12 @@ diff_summary <- diff_plot %>%
   ungroup %>% 
   filter(type != 'mix')
 
-# diff_plot %>%
-#   ggplot(aes(x=reorder(CODE, diff), y=value)) +
-#   # stat_boxplot(geom = "errorbar", width = 0.2) + 
-#   geom_boxplot(aes(fill = type), outlier.shape = NA) +
-# geom_ribbon(data = diff_summary, 
-#             aes(x = reorder(CODE, diff_mean),
-#                                     y = value_mean,
-#                                     ymin = value_cilo,
-#                                     ymax =value_ciup,
-#                 colour = type,
-#                 fill = type,
-#                                     group = type),
-#             alpha=0.1,
-#             size = 0.1) +
-# geom_line(data = diff_summary, aes(x = reorder(CODE, diff_mean),
-#                                   y = value_mean,
-#                                   colour = type,
-#                                   group = type),
-#           size = 1) +
-# # scale_color_manual(name="", values=c("RGPHAE 2013 (+/- 1.5*IQR)"="#440154FF")) +
-# # geom_abline(intercept = 0, slope = 0) +
-#   scale_fill_viridis_d(alpha = 0.7, option = 'D') +
-#   scale_colour_viridis_d(alpha = 0.7, option = "D") +
-#   # ggtitle('Changes in population shares over time (by commune, in %, 2013 baseline)') +
-#   labs(x = "Arrondissements ordered by absolute change in population share",
-#        y = 'Deviation in %') +
-#   # geom_rangeframe() +
-#   theme_tufte() +
-#   theme(plot.title = element_text(hjust = 0.5),
-#         legend.position="none",
-#         text =  element_text(size=20),
-#         axis.ticks = element_blank(),
-#         axis.text.x = element_blank())
-
 png(file="./visualizations/sim_pop_diff.png",
     width=1000, height=500)
 
 diff_summary %>%
   mutate(type = gsub("static", "fixed", type)) %>% 
   ggplot(aes(x=reorder(CODE, diff_mean), y=value_mean, group = type)) +
-  # stat_boxplot(geom = "errorbar", width = 0.2) + 
-  # geom_boxplot(aes(fill = type), outlier.shape = NA) +
   geom_ribbon(aes(ymin = value_cilo,
                   ymax =value_ciup,
                   colour = type,
@@ -505,37 +425,19 @@ diff_summary %>%
               alpha=0.2,
               size = 0.1) +
   geom_line(aes(colour = type), size = 2) +
-  # scale_color_manual(name="", values=c("RGPHAE 2013 (+/- 1.5*IQR)"="#440154FF")) +
-  # geom_abline(intercept = 0, slope = 0) +
   scale_fill_viridis_d(alpha = 0.7, end = 0.5, option = 'D') +
   scale_colour_viridis_d(alpha = 0.7, end = 0.5, option = "D") +
-  # ggtitle('Changes in population shares over time (by commune, in %, 2013 baseline)') +
   labs(x = "Arrondissements",
        y = 'Relative Bias (in %)',
        fill = '',
        color = '') +
-  # geom_rangeframe() +
   theme_tufte() +
   theme(plot.title = element_text(hjust = 0.5),
-        # legend.position="none",
         text =  element_text(size=20),
         axis.ticks = element_blank(),
         axis.text.x = element_blank())
 
 dev.off()
-
-
-# diff_table <- pop_share_wp %>% 
-#   mutate(diff = abs((pop02_p - pop13_p)/pop02_p)*100,
-#          diff_dynamic = abs((pop13_p - ppp13_p)/pop13_p)*100,
-#          pred_dyn_diff = abs((pop02_p - ppp13_p)/pop02_p)*100,
-#          diff_static = abs((pop13_p - pop02_p)/pop13_p)*100,
-#          diff_mix = abs((pop13_p - mix13_p)/pop13_p)*100,
-#          pred_mix_diff = abs((pop02_p - mix13_p)/pop02_p)*100) %>% 
-#   # group_by(CODE) %>%
-#   # summarise(across(contains('diff'), mean)) %>%
-#   # ungroup %>%
-#   mutate(diff_q = cut(diff, breaks = quantile(diff, probs = seq(0, 1, 0.25)), include.lowest = T))
 
 diff_table <- pop_share_wp %>% 
   mutate(diff = abs(pop13_p - pop02_p),
@@ -576,7 +478,6 @@ png(file="./visualizations/sim_slope_true.png",
 
 pop_slope %>%
   ggplot() +
-  # add a line segment that goes from men to women for each discipline
   geom_segment(aes(x = 1, xend = 2, 
                    y = pop02_p, 
                    yend = wt,
@@ -584,9 +485,7 @@ pop_slope %>%
                    col = wt_type), 
                size = 1.2) +
   ylim(min(pop_slope$wt), max(pop_slope$wt) + 2) + 
-  # set the colors
   scale_color_viridis_d(alpha = 0.5, end = 0.5, option = 'D', guide = "none")  +
-  # remove all axis stuff
   theme_classic() +
   theme(axis.line = element_blank(),
         axis.text = element_blank(),
@@ -596,12 +495,10 @@ pop_slope %>%
                y = min(pop_slope$wt) - 2,
                yend = max(pop_slope$wt) + 1,
                col = "grey70", size = 0.5) +
-  # add vertical lines that act as axis for women
   geom_segment(x = 2, xend = 2, 
                y = min(pop_slope$wt) - 2,
                yend = max(pop_slope$wt) + 1,
                col = "grey70", size = 0.5) +
-  # add the words "men" and "women" above their axes
   geom_text(aes(x = x, y = y, label = label),
             data = data.frame(x = 1:2, 
                               y = 2 + max(pop_slope$wt),
@@ -612,25 +509,20 @@ pop_slope %>%
                 y = pop02_p, 
                 label = paste0(round(pop02_p, 1), "%")),
             col = "grey30", hjust = "right", size = 9) +
-  # add the success rate next to each point on the women axis
   geom_text(aes(x = 2 + 0.08, 
                 y = wt, 
                 label = paste0(round(wt, 1), "%")),
             col = "grey30", size = 9) +
-  # set the limits of the x-axis so that the labels are not cut off
   scale_x_continuous(limits = c(0.8, 2.2)) +
   geom_point(aes(x = 1, 
                  y = pop02_p), size = 4.5,
              col = "white") +
-  # add the white outline for the points at each rate for women
   geom_point(aes(x = 2, 
                  y = wt), size = 4.5,
              col = "white") +
-  # add the actual points at each rate for men
   geom_point(aes(x = 1, 
                  y = pop02_p), size = 4,
              col = "grey60") +
-  # add the actual points at each rate for men
   geom_point(aes(x = 2, 
                  y = wt), size = 4,
              col = "grey60") 
@@ -645,7 +537,6 @@ png(file="./visualizations/sim_slope_ppp.png",
 pop_slope %>%
   filter(wt_type == 'ppp') %>%
   ggplot() +
-  # add a line segment that goes from men to women for each discipline
   geom_segment(aes(x = 1, xend = 2, 
                    y = pop02_p, 
                    yend = wt,
@@ -653,9 +544,7 @@ pop_slope %>%
                    col = wt_type), 
                size = 1.2) +
   ylim(min(pop_slope$wt), max(pop_slope$wt) + 2) + 
-  # set the colors
   scale_color_viridis_d(alpha = 0.5, begin = 0.5, option = 'D', guide = "none")  +
-  # remove all axis stuff
   theme_classic() + 
   theme(axis.line = element_blank(),
         axis.text = element_blank(),
@@ -665,12 +554,10 @@ pop_slope %>%
                y = min(pop_slope$wt) - 2,
                yend = max(pop_slope$wt) + 1,
                col = "grey70", size = 0.5) +
-  # add vertical lines that act as axis for women
   geom_segment(x = 2, xend = 2, 
                y = min(pop_slope$wt) - 2,
                yend = max(pop_slope$wt) + 1,
                col = "grey70", size = 0.5) +
-  # add the words "men" and "women" above their axes
   geom_text(aes(x = x, y = y, label = label),
             data = data.frame(x = 1:2, 
                               y = 2 + max(pop_slope$wt),
@@ -681,25 +568,20 @@ pop_slope %>%
                 y = pop02_p, 
                 label = paste0(round(pop02_p, 1), "%")),
             col = "grey30", hjust = "right", size = 9) +
-  # add the success rate next to each point on the women axis
   geom_text(aes(x = 2 + 0.08, 
                 y = wt, 
                 label = paste0(round(wt, 1), "%")),
             col = "grey30", size = 9) +
-  # set the limits of the x-axis so that the labels are not cut off
   scale_x_continuous(limits = c(0.8, 2.2)) +
   geom_point(aes(x = 1, 
                  y = pop02_p), size = 4.5,
              col = "white") +
-  # add the white outline for the points at each rate for women
   geom_point(aes(x = 2, 
                  y = wt), size = 4.5,
              col = "white") +
-  # add the actual points at each rate for men
   geom_point(aes(x = 1, 
                  y = pop02_p), size = 4,
              col = "grey60") +
-  # add the actual points at each rate for men
   geom_point(aes(x = 2, 
                  y = wt), size = 4,
              col = "grey60") 
@@ -940,79 +822,6 @@ output_df %>%
                                     q975 = ~quantile(., probs = 0.975)*100))) %>% 
   xtable(digits = 2)
 
-# Relative Bias (MSE)
-
-
-
-# Relative RMSE (MSE)
-output_df %>% 
-  filter(status == 'deprived' | status == 'poor' | status == 'yes') %>%
-  filter(ind == 'h_ind' & ipf_type == 'prop') %>% 
-  left_join(diff_table %>% 
-              select(CODE, diff_q),
-            by = 'CODE') %>% 
-  mutate(emp_r_mse = ((p_ipf - p_true)/p_true)^2) %>% 
-  group_by(CODE, wt_type, diff_q) %>% 
-  summarise(emp_r_mse = mean(emp_r_mse),
-            est_r_mse = mean(mse)) %>% 
-  ungroup() %>% 
-  mutate(emp_r_rmse = sqrt(emp_r_mse),
-         est_r_rmse = sqrt(est_r_mse),
-         rb_est_rmse = (est_r_rmse - emp_r_rmse)/ emp_r_rmse) %>% 
-  group_by(diff_q, wt_type) %>% 
-  summarise(across(emp_r_rmse, list(q25 = ~quantile(., probs = 0.025)*100,
-                                    q250 = ~quantile(., probs = 0.25)*100,
-                                    median = ~median(.)*100,
-                                    mean = ~mean(.)*100, 
-                                    q750 = ~quantile(., probs = 0.75)*100,
-                                    q975 = ~quantile(., probs = 0.975)*100))) %>% 
-  xtable(digits = 2)
-
-
-# Bar chart: Population of a region (DHS 2013, Updates, Census 2013)
-
-# png(file="./visualizations/sim_bar_dakar.png",
-#      width=1000, height=500)
-# 
-# eval_df %>% 
-#   filter(regid == '01' & hh_head == 'female' & ind == 'h_ind') %>% 
-#   group_by(wt_type) %>% 
-#   summarise(across(c(offset, dhs, ipf, true), mean)) %>% 
-#   pivot_longer(
-#     cols = offset:true,
-#     names_to = "model",
-#     values_to = "values"
-#   ) %>% 
-#   unite('data_source', c('wt_type','model')) %>% 
-#   filter(data_source == 'static_offset' |
-#            data_source == 'static_dhs' |
-#            data_source == 'static_ipf' |
-#            data_source == 'dynamic_si_bench_ipf' |
-#            data_source == 'static_true'
-#   ) %>% 
-#   mutate(data_source = factor(data_source,
-#                               levels = c('static_offset', 
-#                                          'static_dhs', 
-#                                          'static_ipf', 'dynamic_si_bench_ipf',
-#                                          'static_true'),
-#                               labels = c('RGPH\n2002', 
-#                                          'DHS\n2013',
-#                                          'IPF\nPM', 'IPF\nSI',
-#                                          'RGPHAE\n2013'))) %>% 
-#   ggplot() +
-#   geom_bar(aes(x = data_source, y = values, fill = data_source),
-#            stat = "identity", position = "dodge") +
-#   scale_y_continuous("Headcount ratio", expand = c(0, 0)) +
-#   scale_x_discrete("Data source") +
-#   scale_fill_viridis_d(alpha = 0.7, option = 'D') +
-#   theme_tufte() +
-#   theme(plot.title = element_text(hjust = 0.5),
-#         legend.position="none",
-#         text =  element_text(size=20),
-#         axis.ticks = element_blank())
-# 
-# dev.off()
-
 png(file="./visualizations/sim_box_dakar.png",
      width=1000, height=500)
 
@@ -1053,81 +862,6 @@ eval_df %>%
         axis.ticks = element_blank())
 
 dev.off()
-
-
-# Box plot all arrondissements + true census ------------------------------
-
-png(file="./visualizations/sim_box_all_ipf.png",
-     width=1000, height=250)
-
-
-# box_all_arr <- deprived_df %>% 
-#   filter(ind == 'h_ind' & wt_type == 'dynamic_si_bench' & hh_head == 'female') %>% 
-#   select(CODE, y = ipf, true)
-
-box_all_arr <- output_df %>%
-  filter(status == 'deprived' | status == 'poor' | status == 'yes') %>%
-  filter(ind == 'h_ind' & 
-           hh_head == 'female' & 
-           ipf_type == 'prop' & 
-           wt_type != 'benchmark') %>% 
-  select(CODE, wt_type, y = p_ipf, offset, true = p_true, run) %>% 
-  left_join(diff_table %>% 
-              select(CODE, diff),
-            by = 'CODE')
-
-# %>% 
-#   mutate(pop_change = abs((true - offset)/offset), #growth rate
-#          y = abs((true - y)/true)) #(mean) absolute percentage deviation
-
-# %>% 
-#   group_by(CODE, run) %>% 
-#   mutate(pop_change = log(pop_change),
-#          y = log(y)) %>% 
-  # ungroup()
-
-box_summary <- box_all_arr %>% 
-  group_by(CODE, diff, wt_type) %>% 
-  summarise(true_mean = mean(true),
-            true_cilo = mean(true) - 1.5*IQR(true), #mean(true) - 1.5*IQR(true)
-            true_ciup = mean(true) + 1.5*IQR(true)) %>% 
-  ungroup()
-
-
-# Sort by pop size
-box_all_arr %>% 
-  ggplot(aes(x = reorder(CODE, true), y = y)) +
-  # stat_boxplot(geom = "errorbar", width = 0.2) + 
-  geom_boxplot(aes(fill = wt_type), outlier.alpha = 0.1, outlier.size = 0.2) +
-  scale_fill_viridis_d(begin = 0.33, alpha = 0.7, option = 'D', name = ""
-                       , breaks = c('dynamic_si_bench', 'static', 'benchmark')
-                       , labels = c('dynamic', 'static', 'benchmark')) +
-geom_ribbon(data = box_summary, aes(x = reorder(CODE, true_mean),
-                                    y = true_mean,
-                                    ymin = true_cilo,
-                                    ymax =true_ciup,
-                                    group = 1),
-            color = "#440154FF",
-            fill = "#440154FF",
-            alpha=0.1,
-            size = 0.1) +
-geom_line(data = box_summary, aes(x = reorder(CODE, true_mean),
-                                  y = true_mean,
-                                  group = 1,
-                                  color="RGPHAE 2013 (+/- 1.5*IQR)"),
-          size = 1) +
-scale_color_manual(name="", values=c("RGPHAE 2013 (+/- 1.5*IQR)"="#440154FF")) +
-labs(x = "Arrondissements",
-     y = 'Headcount') + 
-  theme_tufte() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "bottom",
-        text =  element_text(size=20),
-        axis.ticks = element_blank(),
-        axis.text.x=element_blank())
-
-  dev.off()  
-
 
 # Plot percentage RMSE ----------------------------------------------------
 

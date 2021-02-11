@@ -106,11 +106,7 @@ map_com %>%
       mutate(hcr = cut(hcr, quantile(hcr, seq(0,1, 0.1)))), by = 'COD_ENTITE') %>% 
   ggplot(aes(x = long, y = lat)) +
   geom_polygon(aes(group = group, fill = hcr)) +
-  # geom_text(aes(label = COD_ENTITE), size = 3, hjust = 0.5)+
   scale_fill_brewer(10, palette = 'BrBG') +
-  # scale_fill_gradient2(midpoint = 0.68, low = '#003c30', mid = "white" , high = '#543005', 
-  # name = "Headcount\nRatio") +
-  # scale_fill_viridis_c(option = "D", limit = c(-1,1)) +
   theme_tufte() +
   theme(plot.title = element_text(hjust = 0.5),
         text =  element_text(size=20),
@@ -130,9 +126,7 @@ census13_raw %>%
   summarise(hcr = 100*sum(wt[h_ind == 'poor'], na.rm = T)/sum(wt[h_ind == 'poor' | h_ind == 'non-poor'], 
                                                               na.rm = T),
             hcr_f = 100*sum(wt[h_ind == 'poor' & hh_head == 'female'], na.rm = T)/sum(wt[(h_ind == 'poor' | h_ind == 'non-poor') & hh_head == 'female'], na.rm = T),
-            # hcr_y = 100*sum(wt[h_ind == 'poor' & (age_head == '[15,20)' | age_head == '[20,25)')], na.rm = T)/sum(wt[(h_ind == 'poor' | h_ind == 'non-poor') & (age_head == '[15,20)' | age_head == '[20,25)')], na.rm = T),
-            # hcr_target = 100*sum(wt[h_ind == 'poor' & hh_head == 'female' & (age_head == '[15,20)' | age_head == '[20,25)')], na.rm = T)/sum(wt[(h_ind == 'poor' | h_ind == 'non-poor') & hh_head == 'female' & (age_head == '[15,20)' | age_head == '[20,25)')], na.rm = T)
-  ) %>% 
+            ) %>% 
   ungroup() %>% 
   left_join(map_com@data %>% 
               select(REG, COD_REG) %>% 
@@ -166,7 +160,6 @@ census13_raw %>%
             n_i = sum(wt)) %>% 
   group_by(hh_head) %>% 
   mutate(p = max(n_i)/census13_raw$wt %>% sum(),
-         # ind = ind %>% as.integer,
          w = 1/18,
          w = replace(w, ind == 1, 1/3),
          w = replace(w, ind == 3, 1/6),
@@ -176,16 +169,9 @@ census13_raw %>%
          p_contr = w*h_i/h_mean,
          p_contr_adj = p_contr/sum(p_contr)*h_mean) %>% 
   ungroup() %>% 
-  # unite('urban_head_children', c('children','urban_head')) %>%
   arrange(hh_head, ind) %>% 
-  # mutate(ind = factor(ind, levels = unique(ind)),
-  #        hh_head_urban_head = factor(hh_head_urban_head,
-  #                                 levels = c("single_female", "single_male", "couple_female", "couple_male",
-  #                                            "small_female", "small_male", "large_female", "large_male"))) %>% 
   mutate(hh_head = factor(hh_head,
                           levels = c("female", "male"))) %>% 
-  # filter(hh_head_age_head == 'female_[15,20)' | hh_head_age_head == 'female_[20,25)' |
-  #        hh_head_age_head == 'male_[15,20)' | hh_head_age_head == 'male_[20,25)') %>% 
   ggplot(aes(fill=ind, y=p_contr, x=hh_head)) + 
   geom_bar(position="stack", stat="identity", width = 0.9, alpha = 1) + 
   scale_fill_viridis_d(option = "D", name = "", labels = c("Child mortality",
@@ -206,18 +192,6 @@ census13_raw %>%
   scale_color_manual(name="Indicators", values=c("Population share"="grey90", "Headcount ratio"="#d95f0e" )) +
   labs(x = "Sex of head of household",
        y = '(Contributions to) H') + 
-  # scale_x_discrete(labels=c("F\n0-\n4", "F\n5-\n9", "F\n10-\n14", "F\n15-\n19", "F\n20-\n24", "F\n25-\n29", "F\n30-\n34", "F\n35-\n39",
-  #                           "F\n40-\n44", "F\n45-\n49", "F\n50-\n54", "F\n55-\n59", "F\n60-\n64", "F\n65-\n69", "F\n70-\n74", "F\n75-\n79",
-  #                           "F\n80-\n84", "F\n85-\n89", "F\n90-\n94", "F\n95-\n99", "F\n100+",
-  #                           "M\n0-\n4", "M\n5-\n9", "M\n10-\n14", "M\n15-\n19", "M\n20-\n24", "M\n25-\n29", "M\n30-\n34", "M\n35-\n39",
-  #                           "M\n40-\n44", "M\n45-\n49", "M\n50-\n54", "M\n55-\n59", "M\n60-\n64", "M\n65-\n69", "M\n70-\n74", "M\n75-\n79",
-  #                           "M\n80-\n84", "M\n85-\n89", "M\n90-\n94", "M\n95-\n99", "M\n100+")) +
-  # scale_x_discrete(labels=c("Female\n15-19", "Female\n20-24",
-  #                           "Male\n15-19", "Male\n20-24")) +
-  # scale_x_discrete(breaks = c("single_female", "single_male", "couple_female", "couple_male",
-  #                             "small_female", "small_male", "large_female", "large_male"),
-  #                  labels=c("Single\nfemale", "Single\nmale", "Couple\nfemale", "Couple\nmale",
-#                           "Small\nfemale", "Small\nmale", "Large\nfemale", "Large\nmale")) +
 scale_x_discrete(breaks = c("female", "male"),
                  labels=c("Female-headed\nhouseholds", "Male-headed\nhouseholds")) +
   # geom_rangeframe() +
@@ -327,7 +301,6 @@ score_dist[rep(1:nrow(score_dist), score_dist$wt),] %>%
            label = c("Not MPI-poor", "Vulnerable", "MPI-poor", "Severely MPI-poor"), size = 4) +
   labs(x= "Deprivation Score",
        y = 'Data Source'
-       # , title = 'Distribution of household-level deprivation scores by data source'
   ) +
   theme_tufte() +
   theme(text = element_text(size=20),
@@ -363,51 +336,6 @@ census13_raw %>%
   filter(grepl('c', rowname)) %>% 
   select(ind1:ind10)
 
-# Changes of sub-national population shares over time ---------------------
-
-# png(file="./visualizations/sim_pop_shares_over_time_appl.png",
-#     width=1000, height=500)
-# 
-# ppp_com %>% 
-#   filter(bb == 0) %>% 
-#   mutate(reg = substr(geoid, start = 1, stop = 2)) %>% 
-#   group_by(reg) %>% 
-#   mutate_if(is.numeric, ~(./sum(.))) %>%
-#   ungroup %>% 
-#   transmute(geoid = geoid,
-#             delta_2013 = sen_ppp_2013/sen_ppp_2013 - 1,
-#             delta_2014 = sen_ppp_2014/sen_ppp_2013 - 1,
-#             delta_2015 = sen_ppp_2015/sen_ppp_2013 - 1,
-#             delta_2016 = sen_ppp_2016/sen_ppp_2013 - 1,
-#             delta_2017 = sen_ppp_2017/sen_ppp_2013 - 1,
-#             delta_2018 = sen_ppp_2018/sen_ppp_2013 - 1,
-#             delta_2019 = sen_ppp_2019/sen_ppp_2013 - 1,
-#             delta_2020 = sen_ppp_2020/sen_ppp_2013 - 1
-#   ) %>% 
-#   pivot_longer(
-#     cols = starts_with("delta_"),
-#     names_to = "year",
-#     names_prefix = "delta_",
-#     names_transform = list(year = as.integer),
-#     values_to = "ppp",
-#     values_drop_na = TRUE,
-#   ) %>% 
-#   ggplot(aes(x=year, y=ppp, colour = ppp, group=geoid)) +
-#   geom_line(size=0.2) + 
-#   geom_abline(intercept = 0, slope = 0) +
-#   scale_colour_viridis(option = "D") +
-#   # ggtitle('Changes in population shares over time (by commune, in %, 2013 baseline)') +
-#   labs(x = "Year",
-#        y = 'Change in %') + 
-#   # geom_rangeframe() +
-#   theme_tufte() +
-#   theme(plot.title = element_text(hjust = 0.5),
-#         legend.position="none",
-#         text =  element_text(size=20),
-#         axis.ticks = element_blank())
-# 
-# dev.off()
-
 # Updated census maps -----------------------------------------------------
 
 headcount <- output_df %>% 
@@ -427,7 +355,6 @@ headcount <- output_df %>%
             g_diff_2018 = hf_2018/hf_2013 - h_2018/h_2013,
             g_diff_2019 = hf_2019/hf_2013 - h_2019/h_2013,
             g_diff_2020 = hf_2020/hf_2013 - h_2020/h_2013)
-# mutate(across(g_diff_2014:g_diff_2020, ~(cut(., quantile(., seq(0, 1, 0.1))))))
 
 headcount_map <- map_com %>% 
   tidy() %>% 
@@ -444,10 +371,7 @@ for (i in 2013:2020){
   p = headcount_map %>% 
     ggplot(aes(x = long, y = lat)) +
     geom_polygon(aes(group = group, fill = !!sym(paste0("g_diff_",i)))) +
-    # geom_text(aes(label = COD_ENTITE), size = 3, hjust = 0.5)+
     scale_fill_distiller(type = "div", palette = 'BrBG', limit = c(-0.5,0.5), direction = -1) +
-    # scale_fill_brewer(10, palette = 'BrBG') + 
-    # scale_fill_viridis_c(option = "D", limit = c(-1,1)) +
     theme_void() +
     theme(legend.position="none")
   plot_list[[i]] = p
@@ -465,10 +389,7 @@ png(file="./visualizations/headcount_map_legend.png", width=1000, height=700)
 headcount_map %>% 
   ggplot(aes(x = long, y = lat)) +
   geom_polygon(aes(group = group, fill = !!sym(paste0("g_diff_",2020)))) +
-  # geom_text(aes(label = COD_ENTITE), size = 3, hjust = 0.5)+
   scale_fill_distiller(type = "div", palette = 'BrBG', limit = c(-0.5,0.5), direction = -1, name = 'Difference in\ngrowth rates') +
-  # scale_fill_brewer(10, palette = 'BrBG') + 
-  # scale_fill_viridis_c(option = "D", limit = c(-1,1)) +
   theme_void() +
   theme(text = element_text(size=20),
         legend.position="right")
@@ -539,7 +460,6 @@ sen_headcount_df %>%
   scale_color_manual(name="Indicators", values=c("H"="grey90")) +
   labs(x = "Year",
        y = '(Contributions to) H') + 
-  # geom_rangeframe() +
   theme_tufte() +
   theme(plot.title = element_text(hjust = 0.5),
         text =  element_text(size=20),
@@ -551,7 +471,7 @@ dev.off()
 # Communal evolution of headcount ratio -----------------------------------
 
 com_headcount <- output_df %>% 
-  filter(COD_ENTITE == '01130133', #05120103 #01130133
+  filter(COD_ENTITE == '01130133',
          status == 'poor',
          ipf_type == 'prop',
          ind == 'h_ind') %>% 
@@ -656,41 +576,3 @@ output_df %>%
                                 q975 = ~quantile(., probs = 0.975)*100))) %>% 
   xtable(digits = 2) %>% 
   print(., include.rownames=FALSE)
-
-# True vs. predicted plots ------------------------------------------------
-# 
-# plot_list = list()
-# for (i in 2013:2020){
-#   p = eval_df %>% 
-#     filter(ind == 'h_ind',
-#            hh_head == 'female', 
-#            year == {i},
-#            (reg_name %in% high_pop & wt_type == 'dynamic_si_bench') | 
-#              (!reg_name %in% high_pop & wt_type == 'static')) %>% 
-#     mutate(year = as.factor(year)) %>% 
-#     ggplot(aes(x = ipf, y = dhs)) +
-#     geom_abline(intercept = 0, slope = 1) +
-#     geom_point(aes(color = model, size = 2*glm_fit_sd), alpha = 0.5) +
-#     geom_smooth(aes(color = model, fill = model), method = lm, size = 2) +
-#     scale_color_viridis_d(option = 'D', end = 0.5) +
-#     scale_fill_viridis_d(option = 'D', end = 0.5) +
-#     labs(x = "Predicted",
-#          y = 'Actual') +
-#     xlim(0.2, 0.6) +
-#     ylim(0.2, 0.6) +
-#     theme_void() +
-#     theme(plot.title = element_text(hjust = 0.5),
-#           text =  element_text(size=20),
-#           axis.ticks = element_blank(),
-#           legend.position="none",
-#           axis.text.x = element_blank(),
-#           axis.text.y = element_blank())
-#   plot_list[[i]] = p
-# }
-# 
-# for (i in 2013:2020){
-#   file_name = paste0("./visualizations/appl_tvp_reg_",i,".tif")
-#   tiff(file_name, width=250, height=250)
-#   print(plot_list[[i]])
-#   dev.off()
-# }
