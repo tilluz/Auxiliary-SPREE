@@ -1,0 +1,99 @@
+model{
+  
+  ## indexing
+  # i = microcensus enumeration zone
+  # t = residential type
+  # k = regression coefficient
+  
+  for(i in 1:ni){
+    
+    # N = true number of people
+    N[i] ~ dpois(D[i]*A[i])
+    
+    # D = true density of people
+    D[i] ~ dlnorm(Dbar02[i], pow(sigmaD[type[i],region[i],state[i]],-2))
+    
+    # Dbar = expected density
+    Dbar02[i] <- alpha[type[i],region[i],state[i]] + beta[1]*bsgm_02_m[i] + beta[2]*bsgm_02_m_sd[i] + beta[3]*bsgm_02_s[i] + beta[4]*bsgm_02_s_sd[i] + beta[5]*dst011_02[i] + beta[6]*dst011_02_sd[i] + beta[7]*dst040_02[i] + beta[8]*dst040_02_sd[i] + beta[8]*dst130_02[i] + beta[10]*dst130_02_sd[i] + beta[11]*dst140_02[i] + beta[12]*dst140_02_sd[i] + beta[13]*dst150_02[i] + beta[14]*dst150_02_sd[i] + beta[15]*dst160_02[i] + beta[16]*dst160_02_sd[i] + beta[17]*dst190_02[i] + beta[18]*dst190_02_sd[i] + beta[19]*dst200_02[i] + beta[20]*dst200_02_sd[i] + beta[21]*wdpa_02[i] + beta[22]*wdpa_02_sd[i] + beta[23]*dmsp_02[i] + beta[24]*dmsp_02_sd[i] + beta[25]*prec_02[i] + beta[26]*prec_02_sd[i] + beta[27]*tavg_02[i] + beta[28]*tavg_02_sd[i]
+    
+    # posterior predictions
+    Nhat02[i] ~ dpois(Dhat02[i]*A[i])
+    Dhat02[i] ~ dlnorm(Dbar02[i], pow(sigmaD[type[i],region[i],state[i]],-2))
+  }
+  
+  # alpha = average population density (log-scale) for each settlement type per LGA (hierarchical by type/region/state/lga)
+  mu_alpha_national ~ dnorm(0, 1e-3)
+  sigma_alpha_national ~ dunif(0, 1e3)
+  
+  alpha0_national ~ dnorm(mu_alpha_national, pow(sigma_alpha_national, -2))
+  
+  for(t in 1:ntype){
+    alpha0_type[t] ~ dnorm(mu_alpha_type[t], pow(sigma_alpha_type[t],-2))
+    
+    mu_alpha_type[t] ~ dnorm(mu_alpha_national, pow(sigma_alpha_national,-2))
+    sigma_alpha_type[t] ~ dunif(0, sigma_alpha_national)
+    
+    for(r in 1:nregion){
+      alpha0_region[t,r] ~ dnorm(mu_alpha_region[t,r], pow(sigma_alpha_region[t,r],-2))
+      
+      mu_alpha_region[t,r] ~ dnorm(mu_alpha_type[t], pow(sigma_alpha_type[t],-2))
+      sigma_alpha_region[t,r] ~ dunif(0, sigma_alpha_type[t])
+      
+      for(s in 1:nstate[r]){
+        alpha[t,r,s] ~ dnorm(mu_alpha_state[t,r,s], pow(sigma_alpha_state[t,r,s],-2))
+        
+        mu_alpha_state[t,r,s] ~ dnorm(mu_alpha_region[t,r], pow(sigma_alpha_region[t,r],-2))
+        sigma_alpha_state[t,r,s] ~ dunif(0, sigma_alpha_region[t,r])
+      }
+    }
+  }
+  
+  # beta = fixed effects of covariates
+  for(b in 1:nbeta){
+    beta[b] ~ dnorm(0, pow(5,-2))
+  }
+  
+  # sigmaD = residual variance in population density (log-scale) for an LGA (hierarchical by type/region/state/lga)
+  mu_sigmaD_national ~ dnorm(0, 1e-3) I(0,)
+  sigma_sigmaD_national ~ dunif(0, 3)
+  
+  sigmaD0_national ~ dnorm(mu_sigmaD_national, pow(sigma_sigmaD_national, -2)) T(0,)
+  
+  for(t in 1:ntype){
+    sigmaD0_type[t] ~ dnorm(mu_sigmaD_type[t], pow(sigma_sigmaD_type[t],-2)) T(0,)
+    
+    mu_sigmaD_type[t] ~ dnorm(mu_sigmaD_national, pow(sigma_sigmaD_national,-2)) T(0,)
+    sigma_sigmaD_type[t] ~ dunif(0, sigma_sigmaD_national)
+    
+    for(r in 1:nregion){
+      sigmaD0_region[t,r] ~ dnorm(mu_sigmaD_region[t,r], pow(sigma_sigmaD_region[t,r],-2)) T(0,)
+      
+      mu_sigmaD_region[t,r] ~ dnorm(mu_sigmaD_type[t], pow(sigma_sigmaD_type[t],-2)) T(0,)
+      sigma_sigmaD_region[t,r] ~ dunif(0, sigma_sigmaD_type[t])
+      
+      for(s in 1:nstate[r]){
+        sigmaD[t,r,s] ~ dnorm(mu_sigmaD_state[t,r,s], pow(sigma_sigmaD_state[t,r,s],-2)) T(0,)
+        
+        mu_sigmaD_state[t,r,s] ~ dnorm(mu_sigmaD_region[t,r], pow(sigma_sigmaD_region[t,r],-2)) T(0,)
+        sigma_sigmaD_state[t,r,s] ~ dunif(0, sigma_sigmaD_region[t,r])
+      }
+    }
+  }
+  
+  # Predict for census 2013 period
+  
+    for(i in 1:ni){
+    
+    # Dbar = expected density
+    Dbar13[i] <- alpha[type[i],region[i],state[i]] + beta[1]*bsgm_13_m[i] + beta[2]*bsgm_13_m_sd[i] + beta[3]*bsgm_13_s[i] + beta[4]*bsgm_13_s_sd[i] + beta[5]*dst011_13[i] + beta[6]*dst011_13_sd[i] + beta[7]*dst040_13[i] + beta[8]*dst040_13_sd[i] + beta[8]*dst130_13[i] + beta[10]*dst130_13_sd[i] + beta[11]*dst140_13[i] + beta[12]*dst140_13_sd[i] + beta[13]*dst150_13[i] + beta[14]*dst150_13_sd[i] + beta[15]*dst160_13[i] + beta[16]*dst160_13_sd[i] + beta[17]*dst190_13[i] + beta[18]*dst190_13_sd[i] + beta[19]*dst200_13[i] + beta[20]*dst200_13_sd[i] + beta[21]*wdpa_13[i] + beta[22]*wdpa_13_sd[i] + beta[23]*dmsp_11[i] + beta[24]*dmsp_11_sd[i] + beta[25]*prec_13[i] + beta[26]*prec_13_sd[i] + beta[27]*tavg_13[i] + beta[28]*tavg_13_sd[i]
+    
+    # posterior predictions
+    Nhat13[i] ~ dpois(Dhat13[i]*A[i])
+    Dhat13[i] ~ dlnorm(Dbar13[i], pow(sigmaD[type[i],region[i],state[i]],-2))
+  }
+  
+}
+
+
+
+
