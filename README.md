@@ -18,9 +18,6 @@ The code was run on a standard machine with following specifications:
 - Platform: x86_64-pc-linux-gnu (64-bit)
 - Running under: Ubuntu 20.04.2 LTS
 
-Libraries used:
- [1] doParallel_1.0.16   iterators_1.0.12    foreach_1.5.0       randomForest_4.6-14 data.table_1.13.0  
- [6] raster_3.3-7        mice_3.11.0         broom_0.5.6         foreign_0.8-75      rgeos_0.5-3        
-[11] rgdal_1.5-10        sp_1.4-2            survey_4.0          survival_3.1-8      Matrix_1.2-18      
-[16] forcats_0.5.0       stringr_1.4.0       dplyr_1.0.0         purrr_0.3.4         readr_1.3.1        
-[21] tidyr_1.1.0         tibble_3.0.1        ggplot2_3.3.1       tidyverse_1.3.0     haven_2.3.1
+The main file (main.Rmd) provides a general structure for the execution routine.
+
+Get in touch in case of further questions!
